@@ -1,0 +1,2 @@
+# AllmaGen
+Interview task
