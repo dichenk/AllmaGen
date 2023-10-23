@@ -1,0 +1,599 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+  <title>MyResume Bootstrap Template - Index</title>
+  <meta content="" name="description">
+  <meta content="" name="keywords">
+
+  <!-- Favicons -->
+  <link href="{% static 'img/favicon.png' %}" rel="icon">
+  <link href="{% static 'img/apple-touch-icon.png' %}" rel="apple-touch-icon">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Raleway:300,300i,400,400i,500,500i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="{% static 'vendor/aos/aos.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/boxicons/css/boxicons.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/glightbox/css/glightbox.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/swiper/swiper-bundle.min.css' %}" rel="stylesheet">
+
+  <!-- Template Main CSS File -->
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+
+  <!-- =======================================================
+  * Template Name: MyResume
+  * Updated: Sep 18 2023 with Bootstrap v5.3.2
+  * Template URL: https://bootstrapmade.com/free-html-bootstrap-template-my-resume/
+  * Author: BootstrapMade.com
+  * License: https://bootstrapmade.com/license/
+  ======================================================== -->
+</head>
+
+<body>
+
+  <!-- ======= Mobile nav toggle button ======= -->
+  <!-- <button type="button" class="mobile-nav-toggle d-xl-none"><i class="bi bi-list mobile-nav-toggle"></i></button> -->
+  <i class="bi bi-list mobile-nav-toggle d-lg-none"></i>
+  <!-- ======= Header ======= -->
+  <header id="header" class="d-flex flex-column justify-content-center">
+
+    <nav id="navbar" class="navbar nav-menu">
+      <ul>
+        <li><a href="#hero" class="nav-link scrollto active"><i class="bx bx-home"></i> <span>Home</span></a></li>
+        <li><a href="#about" class="nav-link scrollto"><i class="bx bx-user"></i> <span>CTR Visualization</span></a></li>
+        <li><a href="#resume" class="nav-link scrollto"><i class="bx bx-file-blank"></i> <span>EvPM Visualization</span></a></li>
+        <li><a href="#portfolio" class="nav-link scrollto"><i class="bx bx-book-content"></i> <span>mm_dma aggregation</span></a></li>
+        <li><a href="#services" class="nav-link scrollto"><i class="bx bx-server"></i> <span>site_id aggregation</span></a></li>
+        <li><a href="#contact" class="nav-link scrollto"><i class="bx bx-envelope"></i> <span>Contact</span></a></li>
+      </ul>
+    </nav><!-- .nav-menu -->
+
+  </header><!-- End Header -->
+
+  <!-- ======= Hero Section ======= -->
+  <section id="hero" class="d-flex flex-column justify-content-center">
+    <div class="container" data-aos="zoom-in" data-aos-delay="100">
+      <h1>Oleg Diachenko</h1>
+      <p>I💕<span class="typed" data-typed-items="Django, Python, Docker, Pandas"></span></p>
+      <div class="social-links">
+        <a href="#" class="twitter"><i class="bx bxl-twitter"></i></a>
+        <a href="#" class="facebook"><i class="bx bxl-facebook"></i></a>
+        <a href="#" class="instagram"><i class="bx bxl-instagram"></i></a>
+        <a href="#" class="google-plus"><i class="bx bxl-skype"></i></a>
+        <a href="#" class="linkedin"><i class="bx bxl-linkedin"></i></a>
+      </div>
+    </div>
+  </section><!-- End Hero -->
+
+  <main id="main">
+
+     <!-- ======= CTR Visualization Section ======= -->
+     <section id="about" class="about">
+      <div class="container-fluid" data-aos="fade-up">
+
+          <div class="section-title">
+              <h2>CTR Visualization</h2>
+          </div>
+
+          <!-- Индикатор загрузки (скрыт по умолчанию) -->
+          <div id="loadingSpinner" style="display: none; text-align: center; padding: 20px;">
+              <div class="spinner-border" role="status">
+                  <span class="sr-only">Loading...</span>
+              </div>
+          </div>
+
+          <canvas id="ctrChart" style="width: 100%; max-height: 500px;"></canvas>
+
+          <div class="d-flex justify-content-center align-items-center mt-4" style="padding: 20px;">
+              <button id="generateChart">Generate Chart</button>
+              <select id="intervalSelect" style="margin-left: 20px;">
+                  <option value="2D">2 Days</option>
+                  <option value="D">Day</option>
+                  <option value="12H">12 Hours</option>
+                  <option value="6H">6 Hours</option>
+              </select>
+          </div>
+
+        <!-- Подключение библиотек -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        <script>
+            var url = "{% url 'get_ctr_data' %}";
+            var myChart;
+
+            document.getElementById("generateChart").addEventListener("click", function() {
+                // Показать индикатор загрузки
+                document.getElementById("loadingSpinner").style.display = "block";
+
+                var interval = document.getElementById("intervalSelect").value;
+                fetch(url + '?interval=' + interval)
+                .then(response => response.json())
+                .then(data => {
+                    // Скрыть индикатор загрузки
+                    document.getElementById("loadingSpinner").style.display = "none";
+
+                    var ctx = document.getElementById('ctrChart').getContext('2d');
+
+                    // Уничтожить предыдущий график, если он существует
+                    if (myChart) {
+                        myChart.destroy();
+                    }
+
+                    myChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.dates,
+                            datasets: [{
+                                label: 'CTR',
+                                data: data.ctr_values,
+                                borderColor: 'blue',
+                                fill: false
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                              x: {
+                                type: 'category'
+                              },
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                });
+            });
+        </script>
+      </div>
+    </section><!-- End About Section -->
+
+
+    <!-- ======= Resume Section ======= -->
+    <section id="resume" class="resume">
+      <div class="container" data-aos="fade-up">
+
+        <div class="section-title">
+          <h2>CTR Visualization</h2>
+      </div>
+
+      <!-- Индикатор загрузки (скрыт по умолчанию) -->
+      <div id="loadingSpinner" style="display: none; text-align: center; padding: 20px;">
+          <div class="spinner-border" role="status">
+              <span class="sr-only">Loading...</span>
+          </div>
+      </div>
+
+      <canvas id="ctrChart" style="width: 100%; max-height: 500px;"></canvas>
+
+      <div class="d-flex justify-content-center align-items-center mt-4" style="padding: 20px;">
+          <button id="generateChart">Generate Chart</button>
+          <select id="intervalSelect" style="margin-left: 20px;">
+              <option value="2D">2 Days</option>
+              <option value="D">Day</option>
+              <option value="12H">12 Hours</option>
+              <option value="6H">6 Hours</option>
+          </select>
+      </div>
+
+    <!-- Подключение библиотек -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        var url = "{% url 'get_ctr_data' %}";
+        var myChart;
+
+        document.getElementById("generateChart").addEventListener("click", function() {
+            // Показать индикатор загрузки
+            document.getElementById("loadingSpinner").style.display = "block";
+
+            var interval = document.getElementById("intervalSelect").value;
+            fetch(url + '?interval=' + interval)
+            .then(response => response.json())
+            .then(data => {
+                // Скрыть индикатор загрузки
+                document.getElementById("loadingSpinner").style.display = "none";
+
+                var ctx = document.getElementById('ctrChart').getContext('2d');
+
+                // Уничтожить предыдущий график, если он существует
+                if (myChart) {
+                    myChart.destroy();
+                }
+
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: 'CTR',
+                            data: data.ctr_values,
+                            borderColor: 'blue',
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                          x: {
+                            type: 'category'
+                          },
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+  </div>
+    </section><!-- End Resume Section -->
+
+    <!-- ======= Portfolio Section ======= -->
+    <section id="portfolio" class="portfolio section-bg">
+      <div class="container" data-aos="fade-up">
+
+        <div class="section-title">
+          <h2>CTR Visualization</h2>
+      </div>
+
+      <!-- Индикатор загрузки (скрыт по умолчанию) -->
+      <div id="loadingSpinner" style="display: none; text-align: center; padding: 20px;">
+          <div class="spinner-border" role="status">
+              <span class="sr-only">Loading...</span>
+          </div>
+      </div>
+
+      <canvas id="ctrChart" style="width: 100%; max-height: 500px;"></canvas>
+
+      <div class="d-flex justify-content-center align-items-center mt-4" style="padding: 20px;">
+          <button id="generateChart">Generate Chart</button>
+          <select id="intervalSelect" style="margin-left: 20px;">
+              <option value="2D">2 Days</option>
+              <option value="D">Day</option>
+              <option value="12H">12 Hours</option>
+              <option value="6H">6 Hours</option>
+          </select>
+      </div>
+
+    <!-- Подключение библиотек -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        var url = "{% url 'get_ctr_data' %}";
+        var myChart;
+
+        document.getElementById("generateChart").addEventListener("click", function() {
+            // Показать индикатор загрузки
+            document.getElementById("loadingSpinner").style.display = "block";
+
+            var interval = document.getElementById("intervalSelect").value;
+            fetch(url + '?interval=' + interval)
+            .then(response => response.json())
+            .then(data => {
+                // Скрыть индикатор загрузки
+                document.getElementById("loadingSpinner").style.display = "none";
+
+                var ctx = document.getElementById('ctrChart').getContext('2d');
+
+                // Уничтожить предыдущий график, если он существует
+                if (myChart) {
+                    myChart.destroy();
+                }
+
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: 'CTR',
+                            data: data.ctr_values,
+                            borderColor: 'blue',
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                          x: {
+                            type: 'category'
+                          },
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+  </div>
+    </section><!-- End Portfolio Section -->
+
+    <!-- ======= Services Section ======= -->
+    <section id="services" class="services">
+      <div class="container" data-aos="fade-up">
+
+        <div class="section-title">
+          <h2>CTR Visualization</h2>
+      </div>
+
+      <!-- Индикатор загрузки (скрыт по умолчанию) -->
+      <div id="loadingSpinner" style="display: none; text-align: center; padding: 20px;">
+          <div class="spinner-border" role="status">
+              <span class="sr-only">Loading...</span>
+          </div>
+      </div>
+
+      <canvas id="ctrChart" style="width: 100%; max-height: 500px;"></canvas>
+
+      <div class="d-flex justify-content-center align-items-center mt-4" style="padding: 20px;">
+          <button id="generateChart">Generate Chart</button>
+          <select id="intervalSelect" style="margin-left: 20px;">
+              <option value="2D">2 Days</option>
+              <option value="D">Day</option>
+              <option value="12H">12 Hours</option>
+              <option value="6H">6 Hours</option>
+          </select>
+      </div>
+
+    <!-- Подключение библиотек -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        var url = "{% url 'get_ctr_data' %}";
+        var myChart;
+
+        document.getElementById("generateChart").addEventListener("click", function() {
+            // Показать индикатор загрузки
+            document.getElementById("loadingSpinner").style.display = "block";
+
+            var interval = document.getElementById("intervalSelect").value;
+            fetch(url + '?interval=' + interval)
+            .then(response => response.json())
+            .then(data => {
+                // Скрыть индикатор загрузки
+                document.getElementById("loadingSpinner").style.display = "none";
+
+                var ctx = document.getElementById('ctrChart').getContext('2d');
+
+                // Уничтожить предыдущий график, если он существует
+                if (myChart) {
+                    myChart.destroy();
+                }
+
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: 'CTR',
+                            data: data.ctr_values,
+                            borderColor: 'blue',
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                          x: {
+                            type: 'category'
+                          },
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+  </div>
+    </section><!-- End Services Section -->
+
+    <!-- ======= Testimonials Section ======= -->
+    <section id="testimonials" class="testimonials section-bg">
+      <div class="container" data-aos="fade-up">
+
+        <div class="section-title">
+          <h2>Testimonials</h2>
+        </div>
+
+        <div class="testimonials-slider swiper" data-aos="fade-up" data-aos-delay="100">
+          <div class="swiper-wrapper">
+
+            <div class="swiper-slide">
+              <div class="testimonial-item">
+                <img src="{% static 'img/testimonials/testimonials-1.jpg' %}" class="testimonial-img" alt="">
+                <h3>Saul Goodman</h3>
+                <h4>Ceo &amp; Founder</h4>
+                <p>
+                  <i class="bx bxs-quote-alt-left quote-icon-left"></i>
+                  Proin iaculis purus consequat sem cure digni ssim donec porttitora entum suscipit rhoncus. Accusantium quam, ultricies eget id, aliquam eget nibh et. Maecen aliquam, risus at semper.
+                  <i class="bx bxs-quote-alt-right quote-icon-right"></i>
+                </p>
+              </div>
+            </div><!-- End testimonial item -->
+
+            <div class="swiper-slide">
+              <div class="testimonial-item">
+                <img src="{% static 'img/testimonials/testimonials-2.jpg' %}" class="testimonial-img" alt="">
+                <h3>Sara Wilsson</h3>
+                <h4>Designer</h4>
+                <p>
+                  <i class="bx bxs-quote-alt-left quote-icon-left"></i>
+                  Export tempor illum tamen malis malis eram quae irure esse labore quem cillum quid cillum eram malis quorum velit fore eram velit sunt aliqua noster fugiat irure amet legam anim culpa.
+                  <i class="bx bxs-quote-alt-right quote-icon-right"></i>
+                </p>
+              </div>
+            </div><!-- End testimonial item -->
+
+            <div class="swiper-slide">
+              <div class="testimonial-item">
+                <img src="{% static 'img/testimonials/testimonials-3.jpg' %}" class="testimonial-img" alt="">
+                <h3>Jena Karlis</h3>
+                <h4>Store Owner</h4>
+                <p>
+                  <i class="bx bxs-quote-alt-left quote-icon-left"></i>
+                  Enim nisi quem export duis labore cillum quae magna enim sint quorum nulla quem veniam duis minim tempor labore quem eram duis noster aute amet eram fore quis sint minim.
+                  <i class="bx bxs-quote-alt-right quote-icon-right"></i>
+                </p>
+              </div>
+            </div><!-- End testimonial item -->
+
+            <div class="swiper-slide">
+              <div class="testimonial-item">
+                <img src="{% static 'img/testimonials/testimonials-4.jpg' %}" class="testimonial-img" alt="">
+                <h3>Matt Brandon</h3>
+                <h4>Freelancer</h4>
+                <p>
+                  <i class="bx bxs-quote-alt-left quote-icon-left"></i>
+                  Fugiat enim eram quae cillum dolore dolor amet nulla culpa multos export minim fugiat minim velit minim dolor enim duis veniam ipsum anim magna sunt elit fore quem dolore labore illum veniam.
+                  <i class="bx bxs-quote-alt-right quote-icon-right"></i>
+                </p>
+              </div>
+            </div><!-- End testimonial item -->
+
+            <div class="swiper-slide">
+              <div class="testimonial-item">
+                <img src="{% static 'img/testimonials/testimonials-5.jpg' %}" class="testimonial-img" alt="">
+                <h3>John Larson</h3>
+                <h4>Entrepreneur</h4>
+                <p>
+                  <i class="bx bxs-quote-alt-left quote-icon-left"></i>
+                  Quis quorum aliqua sint quem legam fore sunt eram irure aliqua veniam tempor noster veniam enim culpa labore duis sunt culpa nulla illum cillum fugiat legam esse veniam culpa fore nisi cillum quid.
+                  <i class="bx bxs-quote-alt-right quote-icon-right"></i>
+                </p>
+              </div>
+            </div><!-- End testimonial item -->
+
+          </div>
+          <div class="swiper-pagination"></div>
+        </div>
+
+      </div>
+    </section><!-- End Testimonials Section -->
+
+    <!-- ======= Contact Section ======= -->
+    <section id="contact" class="contact">
+      <div class="container" data-aos="fade-up">
+
+        <div class="section-title">
+          <h2>Contact</h2>
+        </div>
+
+        <div class="row mt-1">
+
+          <div class="col-lg-4">
+            <div class="info">
+              <div class="address">
+                <i class="bi bi-geo-alt"></i>
+                <h4>Location:</h4>
+                <p>A108 Adam Street, New York, NY 535022</p>
+              </div>
+
+              <div class="email">
+                <i class="bi bi-envelope"></i>
+                <h4>Email:</h4>
+                <p>info@example.com</p>
+              </div>
+
+              <div class="phone">
+                <i class="bi bi-phone"></i>
+                <h4>Call:</h4>
+                <p>+1 5589 55488 55s</p>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="col-lg-8 mt-5 mt-lg-0">
+
+            <form action="forms/contact.php" method="post" role="form" class="php-email-form">
+              <div class="row">
+                <div class="col-md-6 form-group">
+                  <input type="text" name="name" class="form-control" id="name" placeholder="Your Name" required>
+                </div>
+                <div class="col-md-6 form-group mt-3 mt-md-0">
+                  <input type="email" class="form-control" name="email" id="email" placeholder="Your Email" required>
+                </div>
+              </div>
+              <div class="form-group mt-3">
+                <input type="text" class="form-control" name="subject" id="subject" placeholder="Subject" required>
+              </div>
+              <div class="form-group mt-3">
+                <textarea class="form-control" name="message" rows="5" placeholder="Message" required></textarea>
+              </div>
+              <div class="my-3">
+                <div class="loading">Loading</div>
+                <div class="error-message"></div>
+                <div class="sent-message">Your message has been sent. Thank you!</div>
+              </div>
+              <div class="text-center"><button type="submit">Send Message</button></div>
+            </form>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section><!-- End Contact Section -->
+
+  </main><!-- End #main -->
+
+  <!-- ======= Footer ======= -->
+  <footer id="footer">
+    <div class="container">
+      <h3>Brandon Johnson</h3>
+      <p>Et aut eum quis fuga eos sunt ipsa nihil. Labore corporis magni eligendi fuga maxime saepe commodi placeat.</p>
+      <div class="social-links">
+        <a href="#" class="twitter"><i class="bx bxl-twitter"></i></a>
+        <a href="#" class="facebook"><i class="bx bxl-facebook"></i></a>
+        <a href="#" class="instagram"><i class="bx bxl-instagram"></i></a>
+        <a href="#" class="google-plus"><i class="bx bxl-skype"></i></a>
+        <a href="#" class="linkedin"><i class="bx bxl-linkedin"></i></a>
+      </div>
+      <div class="copyright">
+        &copy; Copyright <strong><span>MyResume</span></strong>. All Rights Reserved
+      </div>
+      <div class="credits">
+        <!-- All the links in the footer should remain intact. -->
+        <!-- You can delete the links only if you purchased the pro version. -->
+        <!-- Licensing information: [license-url] -->
+        <!-- Purchase the pro version with working PHP/AJAX contact form: https://bootstrapmade.com/free-html-bootstrap-template-my-resume/ -->
+        Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a>
+      </div>
+    </div>
+  </footer><!-- End Footer -->
+
+  <div id="preloader"></div>
+  <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <!-- Vendor JS Files -->
+  <script src="{% static 'vendor/purecounter/purecounter_vanilla.js' %}"></script>
+  <script src="{% static 'vendor/aos/aos.js' %}"></script>
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'vendor/glightbox/js/glightbox.min.js' %}"></script>
+  <script src="{% static 'vendor/isotope-layout/isotope.pkgd.min.js' %}"></script>
+  <script src="{% static 'vendor/swiper/swiper-bundle.min.js' %}"></script>
+  <script src="{% static 'vendor/typed.js/typed.umd.js' %}"></script>
+  <script src="{% static 'vendor/waypoints/noframework.waypoints.js' %}"></script>
+  <script src="{% static 'vendor/php-email-form/validate.js' %}"></script>
+
+  <!-- Template Main JS File -->
+  <script src="{% static 'js/main.js' %}"></script>
+
+</body>
+
+</html>
