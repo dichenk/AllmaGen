@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
-  <title>MyResume Bootstrap Template - Index</title>
+  <title>The title</title>
   <meta content="" name="description">
   <meta content="" name="keywords">
 
@@ -28,14 +28,6 @@
 
   <!-- Template Main CSS File -->
   <link href="{% static 'css/style.css' %}" rel="stylesheet">
-
-  <!-- =======================================================
-  * Template Name: MyResume
-  * Updated: Sep 18 2023 with Bootstrap v5.3.2
-  * Template URL: https://bootstrapmade.com/free-html-bootstrap-template-my-resume/
-  * Author: BootstrapMade.com
-  * License: https://bootstrapmade.com/license/
-  ======================================================== -->
 </head>
 
 <body>
@@ -49,10 +41,10 @@
     <nav id="navbar" class="navbar nav-menu">
       <ul>
         <li><a href="#hero" class="nav-link scrollto active"><i class="bx bx-home"></i> <span>Home</span></a></li>
-        <li><a href="#about" class="nav-link scrollto"><i class="bx bx-user"></i> <span>CTR Visualization</span></a></li>
-        <li><a href="#resume" class="nav-link scrollto"><i class="bx bx-file-blank"></i> <span>EvPM Visualization</span></a></li>
-        <li><a href="#portfolio" class="nav-link scrollto"><i class="bx bx-book-content"></i> <span>mm_dma aggregation</span></a></li>
-        <li><a href="#services" class="nav-link scrollto"><i class="bx bx-server"></i> <span>site_id aggregation</span></a></li>
+        <li><a href="#CTR" class="nav-link scrollto"><i class="bx bx-user"></i> <span>CTR Visualization</span></a></li>
+        <li><a href="#EVPM" class="nav-link scrollto"><i class="bx bx-file-blank"></i> <span>EvPM Visualization</span></a></li>
+        <li><a href="#mm_dma" class="nav-link scrollto"><i class="bx bx-book-content"></i> <span>mm_dma aggregation</span></a></li>
+        <li><a href="#site_id" class="nav-link scrollto"><i class="bx bx-server"></i> <span>site_id aggregation</span></a></li>
         <li><a href="#contact" class="nav-link scrollto"><i class="bx bx-envelope"></i> <span>Contact</span></a></li>
       </ul>
     </nav><!-- .nav-menu -->
@@ -77,7 +69,7 @@
   <main id="main">
 
      <!-- ======= CTR Visualization Section ======= -->
-     <section id="about" class="about">
+     <section id="CTR" class="about">
       <div class="container-fluid" data-aos="fade-up">
 
           <div class="section-title">
@@ -85,7 +77,7 @@
           </div>
 
           <!-- Индикатор загрузки (скрыт по умолчанию) -->
-          <div id="loadingSpinner" style="display: none; text-align: center; padding: 20px;">
+          <div id="loadingSpinner1" style="display: none; text-align: center; padding: 20px;">
               <div class="spinner-border" role="status">
                   <span class="sr-only">Loading...</span>
               </div>
@@ -94,41 +86,54 @@
           <canvas id="ctrChart" style="width: 100%; max-height: 500px;"></canvas>
 
           <div class="d-flex justify-content-center align-items-center mt-4" style="padding: 20px;">
-              <button id="generateChart">Generate Chart</button>
-              <select id="intervalSelect" style="margin-left: 20px;">
+            <button id="generateCTRChart">Generate CTR Chart</button>
+            <select id="ctrIntervalSelect" style="margin-left: 20px;">
                   <option value="2D">2 Days</option>
                   <option value="D">Day</option>
                   <option value="12H">12 Hours</option>
                   <option value="6H">6 Hours</option>
               </select>
-          </div>
+              <!-- Добавленное выпадающее меню -->
+              <select id="clickTypeSelect" style="margin-left: 20px;">
+                <option value="click">Клик</option>
+                <option value="clickPlus">Клик+</option>
+                <option value="clickMinus">Клик-</option>
+                <option value="click_content">Клик контент</option>
+                <option value="click_lead">Клик лид</option>
+                <option value="click_misc">Клик разное</option>
+                <option value="click_registration">Клик регистрация</option>
+                <option value="click_signup">Клик подписка</option>
 
-        <!-- Подключение библиотек -->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+              </select>
+          </div>
 
         <script>
             var url = "{% url 'get_ctr_data' %}";
-            var myChart;
+            var myCTRChart;
 
-            document.getElementById("generateChart").addEventListener("click", function() {
+
+            document.getElementById("generateCTRChart").addEventListener("click", function() {
                 // Показать индикатор загрузки
-                document.getElementById("loadingSpinner").style.display = "block";
+                document.getElementById("loadingSpinner1").style.display = "block";
 
-                var interval = document.getElementById("intervalSelect").value;
-                fetch(url + '?interval=' + interval)
+                var interval = document.getElementById("ctrIntervalSelect").value;
+                var clickType = document.getElementById("clickTypeSelect").value;
+
+                fetch(url + '?interval=' + interval + '&clickType=' + clickType)
                 .then(response => response.json())
                 .then(data => {
                     // Скрыть индикатор загрузки
-                    document.getElementById("loadingSpinner").style.display = "none";
+                    document.getElementById("loadingSpinner1").style.display = "none";
 
                     var ctx = document.getElementById('ctrChart').getContext('2d');
 
                     // Уничтожить предыдущий график, если он существует
-                    if (myChart) {
-                        myChart.destroy();
+                    if (myCTRChart) {
+                        myCTRChart.destroy();
                     }
 
-                    myChart = new Chart(ctx, {
+                    myCTRChart = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: data.dates,
@@ -155,333 +160,112 @@
             });
         </script>
       </div>
-    </section><!-- End About Section -->
+    </section><!-- End CTR Visualization Section -->
 
 
-    <!-- ======= Resume Section ======= -->
-    <section id="resume" class="resume">
-      <div class="container" data-aos="fade-up">
-
-        <div class="section-title">
-          <h2>CTR Visualization</h2>
-      </div>
-
-      <!-- Индикатор загрузки (скрыт по умолчанию) -->
-      <div id="loadingSpinner" style="display: none; text-align: center; padding: 20px;">
-          <div class="spinner-border" role="status">
-              <span class="sr-only">Loading...</span>
-          </div>
-      </div>
-
-      <canvas id="ctrChart" style="width: 100%; max-height: 500px;"></canvas>
-
-      <div class="d-flex justify-content-center align-items-center mt-4" style="padding: 20px;">
-          <button id="generateChart">Generate Chart</button>
-          <select id="intervalSelect" style="margin-left: 20px;">
-              <option value="2D">2 Days</option>
-              <option value="D">Day</option>
-              <option value="12H">12 Hours</option>
-              <option value="6H">6 Hours</option>
-          </select>
-      </div>
-
-    <!-- Подключение библиотек -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        var url = "{% url 'get_ctr_data' %}";
-        var myChart;
-
-        document.getElementById("generateChart").addEventListener("click", function() {
-            // Показать индикатор загрузки
-            document.getElementById("loadingSpinner").style.display = "block";
-
-            var interval = document.getElementById("intervalSelect").value;
-            fetch(url + '?interval=' + interval)
-            .then(response => response.json())
-            .then(data => {
-                // Скрыть индикатор загрузки
-                document.getElementById("loadingSpinner").style.display = "none";
-
-                var ctx = document.getElementById('ctrChart').getContext('2d');
-
-                // Уничтожить предыдущий график, если он существует
-                if (myChart) {
-                    myChart.destroy();
-                }
-
-                myChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.dates,
-                        datasets: [{
-                            label: 'CTR',
-                            data: data.ctr_values,
-                            borderColor: 'blue',
-                            fill: false
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                          x: {
-                            type: 'category'
-                          },
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            });
-        });
-    </script>
-  </div>
-    </section><!-- End Resume Section -->
-
-    <!-- ======= Portfolio Section ======= -->
-    <section id="portfolio" class="portfolio section-bg">
-      <div class="container" data-aos="fade-up">
+    <!-- ======= EVPM Visualization Section ======= -->
+    <section id="evpm" class="resume">
+      <div class="container-fluid" data-aos="fade-up">
 
         <div class="section-title">
-          <h2>CTR Visualization</h2>
-      </div>
+            <h2>EVPM Visualization</h2>
+        </div>
 
-      <!-- Индикатор загрузки (скрыт по умолчанию) -->
-      <div id="loadingSpinner" style="display: none; text-align: center; padding: 20px;">
-          <div class="spinner-border" role="status">
-              <span class="sr-only">Loading...</span>
-          </div>
-      </div>
+        <!-- Индикатор загрузки (скрыт по умолчанию) -->
+        <div id="loadingSpinner2" style="display: none; text-align: center; padding: 20px;">
+            <div class="spinner-border" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
 
-      <canvas id="ctrChart" style="width: 100%; max-height: 500px;"></canvas>
+        <canvas id="evpmChart" style="width: 100%; max-height: 500px;"></canvas>
 
-      <div class="d-flex justify-content-center align-items-center mt-4" style="padding: 20px;">
-          <button id="generateChart">Generate Chart</button>
-          <select id="intervalSelect" style="margin-left: 20px;">
-              <option value="2D">2 Days</option>
-              <option value="D">Day</option>
-              <option value="12H">12 Hours</option>
-              <option value="6H">6 Hours</option>
+        <div class="d-flex justify-content-center align-items-center mt-4" style="padding: 20px;">
+          <button id="generateEVPMChart">Generate EVPM Chart</button>
+          <select id="evpmIntervalSelect" style="margin-left: 20px;">
+                <option value="2D">2 Days</option>
+                <option value="D">Day</option>
+                <option value="12H">12 Hours</option>
+                <option value="6H">6 Hours</option>
+            </select>
+            <!-- Добавленное выпадающее меню -->
+            <select id="eventTypeSelect" style="margin-left: 20px;">
+              <option value="fclick">FClick</option>
+              <option value="content">Content</option>
+              <option value="registration">Registration</option>
+              <option value="signup">Signup</option>
+              <option value="lead">Lead</option>
+              <option value="other">Other</option>
           </select>
-      </div>
+        </div>
 
-    <!-- Подключение библиотек -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <!-- Подключение библиотек -->
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <script>
-        var url = "{% url 'get_ctr_data' %}";
-        var myChart;
+      <script>
+          var evpmUrl = "{% url 'get_evpm_data' %}";
+          var myEVPMChart;
 
-        document.getElementById("generateChart").addEventListener("click", function() {
-            // Показать индикатор загрузки
-            document.getElementById("loadingSpinner").style.display = "block";
 
-            var interval = document.getElementById("intervalSelect").value;
-            fetch(url + '?interval=' + interval)
-            .then(response => response.json())
-            .then(data => {
-                // Скрыть индикатор загрузки
-                document.getElementById("loadingSpinner").style.display = "none";
+          document.getElementById("generateEVPMChart").addEventListener("click", function() {
+              // Показать индикатор загрузки
+              document.getElementById("loadingSpinner2").style.display = "block";
 
-                var ctx = document.getElementById('ctrChart').getContext('2d');
+              var interval = document.getElementById("evpmIntervalSelect").value;
+              var eventType = document.getElementById("eventTypeSelect").value;
 
-                // Уничтожить предыдущий график, если он существует
-                if (myChart) {
-                    myChart.destroy();
-                }
+              fetch(evpmUrl + '?interval=' + interval + '&eventType=' + eventType)
+              .then(response => response.json())
+              .then(data => {
+                  // Скрыть индикатор загрузки
+                  document.getElementById("loadingSpinner2").style.display = "none";
 
-                myChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.dates,
-                        datasets: [{
-                            label: 'CTR',
-                            data: data.ctr_values,
-                            borderColor: 'blue',
-                            fill: false
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                          x: {
-                            type: 'category'
-                          },
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            });
-        });
-    </script>
-  </div>
-    </section><!-- End Portfolio Section -->
+                  var ctx = document.getElementById('evpmChart').getContext('2d');
 
-    <!-- ======= Services Section ======= -->
-    <section id="services" class="services">
-      <div class="container" data-aos="fade-up">
+                  // Уничтожить предыдущий график, если он существует
+                  if (myEVPMChart) {
+                      myEVPMChart.destroy();
+                  }
 
-        <div class="section-title">
-          <h2>CTR Visualization</h2>
-      </div>
+                  myEVPMChart = new Chart(ctx, {
+                      type: 'line',
+                      data: {
+                          labels: data.dates,
+                          datasets: [{
+                              label: 'EVPM',
+                              data: data.evpm_values,
+                              borderColor: 'blue',
+                              fill: false
+                          }]
+                      },
+                      options: {
+                          responsive: true,
+                          scales: {
+                            x: {
+                              type: 'category'
+                            },
+                              y: {
+                                  beginAtZero: true
+                              }
+                          }
+                      }
+                  });
+              });
+          });
+      </script>
+    </div>
+    </section><!-- End EVPM Visualization Section -->
 
-      <!-- Индикатор загрузки (скрыт по умолчанию) -->
-      <div id="loadingSpinner" style="display: none; text-align: center; padding: 20px;">
-          <div class="spinner-border" role="status">
-              <span class="sr-only">Loading...</span>
-          </div>
-      </div>
+    <!-- ======= mm_dma Section ======= -->
+    <section id="mm_dma" class="portfolio section-bg">
+    </section><!-- End mm_dma Section -->
 
-      <canvas id="ctrChart" style="width: 100%; max-height: 500px;"></canvas>
-
-      <div class="d-flex justify-content-center align-items-center mt-4" style="padding: 20px;">
-          <button id="generateChart">Generate Chart</button>
-          <select id="intervalSelect" style="margin-left: 20px;">
-              <option value="2D">2 Days</option>
-              <option value="D">Day</option>
-              <option value="12H">12 Hours</option>
-              <option value="6H">6 Hours</option>
-          </select>
-      </div>
-
-    <!-- Подключение библиотек -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        var url = "{% url 'get_ctr_data' %}";
-        var myChart;
-
-        document.getElementById("generateChart").addEventListener("click", function() {
-            // Показать индикатор загрузки
-            document.getElementById("loadingSpinner").style.display = "block";
-
-            var interval = document.getElementById("intervalSelect").value;
-            fetch(url + '?interval=' + interval)
-            .then(response => response.json())
-            .then(data => {
-                // Скрыть индикатор загрузки
-                document.getElementById("loadingSpinner").style.display = "none";
-
-                var ctx = document.getElementById('ctrChart').getContext('2d');
-
-                // Уничтожить предыдущий график, если он существует
-                if (myChart) {
-                    myChart.destroy();
-                }
-
-                myChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.dates,
-                        datasets: [{
-                            label: 'CTR',
-                            data: data.ctr_values,
-                            borderColor: 'blue',
-                            fill: false
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                          x: {
-                            type: 'category'
-                          },
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            });
-        });
-    </script>
-  </div>
-    </section><!-- End Services Section -->
+    <!-- ======= site_id Section ======= -->
+    <section id="site_id" class="services">
+    </section><!-- End site_id Section -->
 
     <!-- ======= Testimonials Section ======= -->
     <section id="testimonials" class="testimonials section-bg">
-      <div class="container" data-aos="fade-up">
-
-        <div class="section-title">
-          <h2>Testimonials</h2>
-        </div>
-
-        <div class="testimonials-slider swiper" data-aos="fade-up" data-aos-delay="100">
-          <div class="swiper-wrapper">
-
-            <div class="swiper-slide">
-              <div class="testimonial-item">
-                <img src="{% static 'img/testimonials/testimonials-1.jpg' %}" class="testimonial-img" alt="">
-                <h3>Saul Goodman</h3>
-                <h4>Ceo &amp; Founder</h4>
-                <p>
-                  <i class="bx bxs-quote-alt-left quote-icon-left"></i>
-                  Proin iaculis purus consequat sem cure digni ssim donec porttitora entum suscipit rhoncus. Accusantium quam, ultricies eget id, aliquam eget nibh et. Maecen aliquam, risus at semper.
-                  <i class="bx bxs-quote-alt-right quote-icon-right"></i>
-                </p>
-              </div>
-            </div><!-- End testimonial item -->
-
-            <div class="swiper-slide">
-              <div class="testimonial-item">
-                <img src="{% static 'img/testimonials/testimonials-2.jpg' %}" class="testimonial-img" alt="">
-                <h3>Sara Wilsson</h3>
-                <h4>Designer</h4>
-                <p>
-                  <i class="bx bxs-quote-alt-left quote-icon-left"></i>
-                  Export tempor illum tamen malis malis eram quae irure esse labore quem cillum quid cillum eram malis quorum velit fore eram velit sunt aliqua noster fugiat irure amet legam anim culpa.
-                  <i class="bx bxs-quote-alt-right quote-icon-right"></i>
-                </p>
-              </div>
-            </div><!-- End testimonial item -->
-
-            <div class="swiper-slide">
-              <div class="testimonial-item">
-                <img src="{% static 'img/testimonials/testimonials-3.jpg' %}" class="testimonial-img" alt="">
-                <h3>Jena Karlis</h3>
-                <h4>Store Owner</h4>
-                <p>
-                  <i class="bx bxs-quote-alt-left quote-icon-left"></i>
-                  Enim nisi quem export duis labore cillum quae magna enim sint quorum nulla quem veniam duis minim tempor labore quem eram duis noster aute amet eram fore quis sint minim.
-                  <i class="bx bxs-quote-alt-right quote-icon-right"></i>
-                </p>
-              </div>
-            </div><!-- End testimonial item -->
-
-            <div class="swiper-slide">
-              <div class="testimonial-item">
-                <img src="{% static 'img/testimonials/testimonials-4.jpg' %}" class="testimonial-img" alt="">
-                <h3>Matt Brandon</h3>
-                <h4>Freelancer</h4>
-                <p>
-                  <i class="bx bxs-quote-alt-left quote-icon-left"></i>
-                  Fugiat enim eram quae cillum dolore dolor amet nulla culpa multos export minim fugiat minim velit minim dolor enim duis veniam ipsum anim magna sunt elit fore quem dolore labore illum veniam.
-                  <i class="bx bxs-quote-alt-right quote-icon-right"></i>
-                </p>
-              </div>
-            </div><!-- End testimonial item -->
-
-            <div class="swiper-slide">
-              <div class="testimonial-item">
-                <img src="{% static 'img/testimonials/testimonials-5.jpg' %}" class="testimonial-img" alt="">
-                <h3>John Larson</h3>
-                <h4>Entrepreneur</h4>
-                <p>
-                  <i class="bx bxs-quote-alt-left quote-icon-left"></i>
-                  Quis quorum aliqua sint quem legam fore sunt eram irure aliqua veniam tempor noster veniam enim culpa labore duis sunt culpa nulla illum cillum fugiat legam esse veniam culpa fore nisi cillum quid.
-                  <i class="bx bxs-quote-alt-right quote-icon-right"></i>
-                </p>
-              </div>
-            </div><!-- End testimonial item -->
-
-          </div>
-          <div class="swiper-pagination"></div>
-        </div>
-
-      </div>
     </section><!-- End Testimonials Section -->
 
     <!-- ======= Contact Section ======= -->
@@ -555,7 +339,7 @@
   <!-- ======= Footer ======= -->
   <footer id="footer">
     <div class="container">
-      <h3>Brandon Johnson</h3>
+      <h3>Oleg Diachenko</h3>
       <p>Et aut eum quis fuga eos sunt ipsa nihil. Labore corporis magni eligendi fuga maxime saepe commodi placeat.</p>
       <div class="social-links">
         <a href="#" class="twitter"><i class="bx bxl-twitter"></i></a>
