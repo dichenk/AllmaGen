@@ -2,6 +2,8 @@ from django.shortcuts import render
 from django.http import JsonResponse
 import pandas as pd
 import matplotlib.pyplot as plt
+from django.core.cache import cache
+
 
 
 def main_page(request):
@@ -32,6 +34,11 @@ def evpmChart(request):
     return JsonResponse(data)
 
 def get_ctr(grouping_interval='3H', click_type='click'):
+    cache_key = f'ctr_{grouping_interval}_{click_type}'
+    cached_result = cache.get(cache_key)
+
+    if cached_result is not None:
+        return cached_result
 
     data_y = pd.read_csv('static/interview.data/interview.y.csv')
     data_x = pd.read_csv('static/interview.data/interview.X.csv')
@@ -67,7 +74,6 @@ def get_ctr(grouping_interval='3H', click_type='click'):
         uids_with_other_events = data_y[data_y['tag'].isin(['content', 'lead', 'misc', 'registration', 'signup']) & data_y['uid'].isin(uids_with_fclick)]['uid'].unique()
         filtered_y = data_y[(data_y['uid'].isin(uids_with_other_events)) & (data_y['tag'] == 'fclick')]
 
-
     # Соединение данных из двух файлов по uid
     merged_y = pd.merge(filtered_y, data_x[['uid', 'reg_time']], on='uid', how='inner').set_index('reg_time')
     merged_y.index = pd.to_datetime(merged_y.index)
@@ -78,9 +84,16 @@ def get_ctr(grouping_interval='3H', click_type='click'):
     # Расчет CTR для каждого интервала
     ctr = (grouped_y / grouped_x * 100).fillna(0)
     
+    cache.set(cache_key, ctr, 3600)  # cache for 1 hour
     return ctr
 
 def get_evpm(grouping_interval='3H', event_type='fclick'):
+    cache_key = f'ctr_{grouping_interval}_{event_type}'
+    cached_result = cache.get(cache_key)
+
+    if cached_result is not None:
+        return cached_result
+
     data_y = pd.read_csv('static/interview.data/interview.y.csv')
     data_x = pd.read_csv('static/interview.data/interview.X.csv')
 
@@ -116,4 +129,6 @@ def get_evpm(grouping_interval='3H', event_type='fclick'):
 
     evpm = (grouped_y / grouped_x * 1000).fillna(0)
     
+    cache.set(cache_key, evpm, 3600)  # cache for 1 hour
+
     return evpm
