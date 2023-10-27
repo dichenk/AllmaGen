@@ -6,6 +6,8 @@ services:
       - .:/app
     expose:
       - "8000"
+    depends_on:
+      - redis
 
   nginx:
     image: nginx:latest
@@ -17,3 +19,8 @@ services:
       - ./media:/app/media
     depends_on:
       - web
+
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
