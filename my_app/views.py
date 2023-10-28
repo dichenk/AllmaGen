@@ -41,29 +41,9 @@ def get_ctr(grouping_interval='3H', click_type='click'):
         return cached_result
 
     data_y = pd.read_csv('static/interview.data/interview.y.csv')
-    data_x = pd.read_csv('static/interview.data/interview.X.csv')
-
-    data_x = data_x.sort_values(by='reg_time').drop_duplicates(subset='uid', keep='first')
-
-    # Заполнение пропущенных значений в столбцах osName, model, hardware значением "DoNotKnow"
-    columns_to_fill = ['osName', 'model', 'hardware']
-    for col in columns_to_fill:
-        data_x[col].fillna("DoNotKnow", inplace=True)
 
     # Извлечение 2 значащих блоков из столбца uid
-    data_x['uid'] = data_x['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
     data_y['uid'] = data_y['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
-
-    # Преобразование столбца reg_time в формат datetime и установка его в качестве индекса
-    data_x.set_index('reg_time', inplace=True, drop=False)
-    data_x.index = pd.to_datetime(data_x.index)
-
-    # Создание нового столбца, который учитывает fc_imp_chk
-    data_x['impressions'] = data_x['fc_imp_chk'] + 1
-
-    # Группировка данных из interview.x по заданному интервалу и суммирование значений нового столбца
-    grouped_x = data_x.resample(grouping_interval)['impressions'].sum()
-
 
     # Фильтрация данных из interview.y для событий fclick и click-through
     if click_type == 'click':
@@ -77,6 +57,8 @@ def get_ctr(grouping_interval='3H', click_type='click'):
         uids_with_fclick = data_y[data_y['tag'] == 'fclick']['uid'].unique()
         uids_with_other_events = data_y[data_y['tag'].isin(['content', 'lead', 'misc', 'registration', 'signup']) & data_y['uid'].isin(uids_with_fclick)]['uid'].unique()
         filtered_y = data_y[(data_y['uid'].isin(uids_with_other_events)) & (data_y['tag'] == 'fclick')]
+
+    grouped_x, data_x = get_grouped(grouping_interval)
 
     # Соединение данных из двух файлов по uid
     merged_y = pd.merge(filtered_y, data_x[['uid', 'reg_time']], on='uid', how='inner').set_index('reg_time')
@@ -99,24 +81,8 @@ def get_evpm(grouping_interval='3H', event_type='fclick'):
         return cached_result
 
     data_y = pd.read_csv('static/interview.data/interview.y.csv')
-    data_x = pd.read_csv('static/interview.data/interview.X.csv')
 
-    data_x = data_x.sort_values(by='reg_time').drop_duplicates(subset='uid', keep='first')
-    columns_to_fill = ['osName', 'model', 'hardware']
-    for col in columns_to_fill:
-        data_x[col].fillna("DoNotKnow", inplace=True)
-
-    data_x['uid'] = data_x['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
     data_y['uid'] = data_y['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
-
-    data_x.set_index('reg_time', inplace=True, drop=False)
-    data_x.index = pd.to_datetime(data_x.index)
-
-    # Создание нового столбца, который учитывает fc_imp_chk
-    data_x['impressions'] = data_x['fc_imp_chk'] + 1
-
-    # Группировка данных из interview.x по заданному интервалу и суммирование значений нового столбца
-    grouped_x = data_x.resample(grouping_interval)['impressions'].sum()
 
     # Фильтрация данных из interview.y на основе event_type
     if event_type == 'fclick':
@@ -132,6 +98,8 @@ def get_evpm(grouping_interval='3H', event_type='fclick'):
     elif event_type == 'other':
         filtered_y = data_y[~data_y['tag'].isin(['fclick', 'content', 'vcontent', 'registration', 'vregistration', 'signup', 'vsignup', 'lead', 'vlead'])]
 
+    grouped_x, data_x = get_grouped(grouping_interval)
+
     merged_y = pd.merge(filtered_y, data_x[['uid', 'reg_time']], on='uid', how='inner').set_index('reg_time')
     merged_y.index = pd.to_datetime(merged_y.index)
     grouped_y = merged_y.resample(grouping_interval)['uid'].nunique()
@@ -141,3 +109,21 @@ def get_evpm(grouping_interval='3H', event_type='fclick'):
     cache.set(cache_key, evpm, 3600)  # cache for 1 hour
 
     return evpm
+
+def get_grouped(grouping_interval):
+    data_x = pd.read_csv('static/interview.data/interview.X.csv')
+    data_x = data_x.sort_values(by='reg_time').drop_duplicates(subset='uid', keep='first')
+    # Заполнение пропущенных значений в столбцах osName, model, hardware значением "DoNotKnow"
+    columns_to_fill = ['osName', 'model', 'hardware']
+    for col in columns_to_fill:
+        data_x[col].fillna("DoNotKnow", inplace=True)
+    # Извлечение 2 значащих блоков из столбца uid
+    data_x['uid'] = data_x['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
+    # Преобразование столбца reg_time в формат datetime и установка его в качестве индекса
+    data_x.set_index('reg_time', inplace=True, drop=False)
+    data_x.index = pd.to_datetime(data_x.index)
+    # Создание нового столбца, который учитывает fc_imp_chk
+    data_x['impressions'] = data_x['fc_imp_chk'] + 1
+    # Группировка данных из interview.x по заданному интервалу и суммирование значений нового столбца
+    grouped_x = data_x.resample(grouping_interval)['impressions'].sum()
+    return grouped_x, data_x
