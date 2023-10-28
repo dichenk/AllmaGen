@@ -58,8 +58,12 @@ def get_ctr(grouping_interval='3H', click_type='click'):
     data_x.set_index('reg_time', inplace=True, drop=False)
     data_x.index = pd.to_datetime(data_x.index)
 
-    # Группировка данных из interview.x по заданному интервалу и подсчет уникальных uid
-    grouped_x = data_x.resample(grouping_interval)['uid'].nunique()
+    # Создание нового столбца, который учитывает fc_imp_chk
+    data_x['impressions'] = data_x['fc_imp_chk'] + 1
+
+    # Группировка данных из interview.x по заданному интервалу и суммирование значений нового столбца
+    grouped_x = data_x.resample(grouping_interval)['impressions'].sum()
+
 
     # Фильтрация данных из interview.y для событий fclick и click-through
     if click_type == 'click':
@@ -107,7 +111,12 @@ def get_evpm(grouping_interval='3H', event_type='fclick'):
 
     data_x.set_index('reg_time', inplace=True, drop=False)
     data_x.index = pd.to_datetime(data_x.index)
-    grouped_x = data_x.resample(grouping_interval)['uid'].nunique()
+
+    # Создание нового столбца, который учитывает fc_imp_chk
+    data_x['impressions'] = data_x['fc_imp_chk'] + 1
+
+    # Группировка данных из interview.x по заданному интервалу и суммирование значений нового столбца
+    grouped_x = data_x.resample(grouping_interval)['impressions'].sum()
 
     # Фильтрация данных из interview.y на основе event_type
     if event_type == 'fclick':
