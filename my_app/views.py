@@ -1,13 +1,17 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 import pandas as pd
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from django.core.cache import cache
 
+
+X_FILE = 'static/interview.data/interview.X.csv'
+Y_FILE = 'static/interview.data/interview.y.csv'
 
 
 def main_page(request):
     return render(request, 'index.html')
+
 
 def ctrChart(request):
     interval = request.GET.get('interval', 'D')
@@ -21,6 +25,7 @@ def ctrChart(request):
     }
     return JsonResponse(data)
 
+
 def evpmChart(request):
     interval = request.GET.get('interval', 'D')
     event_type = request.GET.get('eventType', 'fclick')
@@ -33,18 +38,14 @@ def evpmChart(request):
     }
     return JsonResponse(data)
 
+
 def get_ctr(grouping_interval='3H', click_type='click'):
     cache_key = f'ctr_{grouping_interval}_{click_type}'
     cached_result = cache.get(cache_key)
-
     if cached_result is not None:
         return cached_result
 
-    data_y = pd.read_csv('static/interview.data/interview.y.csv')
-
-    # Извлечение 2 значащих блоков из столбца uid
-    data_y['uid'] = data_y['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
-
+    data_x, data_y = get_data_x(), get_data_y()
     # Фильтрация данных из interview.y для событий fclick и click-through
     if click_type == 'click':
         uids_with_other_events = data_y[data_y['tag'].isin(['content', 'lead', 'misc', 'registration', 'signup'])]['uid'].unique()
@@ -58,32 +59,25 @@ def get_ctr(grouping_interval='3H', click_type='click'):
         uids_with_other_events = data_y[data_y['tag'].isin(['content', 'lead', 'misc', 'registration', 'signup']) & data_y['uid'].isin(uids_with_fclick)]['uid'].unique()
         filtered_y = data_y[(data_y['uid'].isin(uids_with_other_events)) & (data_y['tag'] == 'fclick')]
 
-    grouped_x, data_x = get_grouped(grouping_interval)
-
     # Соединение данных из двух файлов по uid
     merged_y = pd.merge(filtered_y, data_x[['uid', 'reg_time']], on='uid', how='inner').set_index('reg_time')
     merged_y.index = pd.to_datetime(merged_y.index)
 
-    # Группировка объединенных данных по заданному интервалу и подсчет уникальных uid
-    grouped_y = merged_y.resample(grouping_interval)['uid'].nunique()
+    grouped_x = data_x.resample(grouping_interval).sum()
+    grouped_y = merged_y.resample(grouping_interval).nunique()
+    ctr = aggregate_data(grouped_x, grouped_y, grouped_x.index, 'impressions', already_grouped=True)*100
 
-    # Расчет CTR для каждого интервала
-    ctr = (grouped_y / grouped_x * 100).fillna(0)
-    
-    cache.set(cache_key, ctr, 3600)  # cache for 1 hour
+    cache.set(cache_key, ctr, 3600)
     return ctr
 
-def get_evpm(grouping_interval='3H', event_type='fclick'):
-    cache_key = f'ctr_{grouping_interval}_{event_type}'
-    cached_result = cache.get(cache_key)
 
+def get_evpm(grouping_interval='3H', event_type='fclick'):
+    cache_key = f'evpm_{grouping_interval}_{event_type}'
+    cached_result = cache.get(cache_key)
     if cached_result is not None:
         return cached_result
 
-    data_y = pd.read_csv('static/interview.data/interview.y.csv')
-
-    data_y['uid'] = data_y['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
-
+    data_x, data_y = get_data_x(), get_data_y()
     # Фильтрация данных из interview.y на основе event_type
     if event_type == 'fclick':
         filtered_y = data_y[data_y['tag'] == 'fclick']
@@ -98,32 +92,50 @@ def get_evpm(grouping_interval='3H', event_type='fclick'):
     elif event_type == 'other':
         filtered_y = data_y[~data_y['tag'].isin(['fclick', 'content', 'vcontent', 'registration', 'vregistration', 'signup', 'vsignup', 'lead', 'vlead'])]
 
-    grouped_x, data_x = get_grouped(grouping_interval)
-
     merged_y = pd.merge(filtered_y, data_x[['uid', 'reg_time']], on='uid', how='inner').set_index('reg_time')
     merged_y.index = pd.to_datetime(merged_y.index)
+
     grouped_y = merged_y.resample(grouping_interval)['uid'].nunique()
+    grouped_x = data_x.resample(grouping_interval)['impressions'].sum()
 
     evpm = (grouped_y / grouped_x * 1000).fillna(0)
-    
+
     cache.set(cache_key, evpm, 3600)  # cache for 1 hour
 
     return evpm
 
-def get_grouped(grouping_interval):
-    data_x = pd.read_csv('static/interview.data/interview.X.csv')
+
+def get_data_x():
+    data_x = pd.read_csv(X_FILE)
     data_x = data_x.sort_values(by='reg_time').drop_duplicates(subset='uid', keep='first')
-    # Заполнение пропущенных значений в столбцах osName, model, hardware значением "DoNotKnow"
+    # Заполнение пропущенных значений в столбцах значением "DoNotKnow"
     columns_to_fill = ['osName', 'model', 'hardware']
     for col in columns_to_fill:
         data_x[col].fillna("DoNotKnow", inplace=True)
     # Извлечение 2 значащих блоков из столбца uid
     data_x['uid'] = data_x['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
-    # Преобразование столбца reg_time в формат datetime и установка его в качестве индекса
+    # reg_time в формат datetime и установка его в качестве индекса
     data_x.set_index('reg_time', inplace=True, drop=False)
     data_x.index = pd.to_datetime(data_x.index)
     # Создание нового столбца, который учитывает fc_imp_chk
     data_x['impressions'] = data_x['fc_imp_chk'] + 1
-    # Группировка данных из interview.x по заданному интервалу и суммирование значений нового столбца
-    grouped_x = data_x.resample(grouping_interval)['impressions'].sum()
-    return grouped_x, data_x
+    return data_x
+
+
+def get_data_y():
+    data_y = pd.read_csv(Y_FILE)
+    # Извлечение 2 значащих блоков из столбца uid
+    data_y['uid'] = data_y['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
+    return data_y
+
+
+def aggregate_data(data_x, merged_y, group_column, metric_column, already_grouped=False):
+    if not already_grouped:
+        grouped_x = data_x.groupby(group_column)[metric_column].sum()
+        grouped_y = merged_y.groupby(group_column)['uid'].nunique()
+    else:
+        grouped_x = data_x[metric_column]
+        grouped_y = merged_y['uid']
+    
+    result = (grouped_y / grouped_x).fillna(0)
+    return result
