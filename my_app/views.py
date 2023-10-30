@@ -1,10 +1,11 @@
-from django.shortcuts import render
-from django.http import JsonResponse
-import pandas as pd
-# import matplotlib.pyplot as plt
-from django.core.cache import cache
+import io
 import logging
 import time
+
+import pandas as pd
+from django.core.cache import cache
+from django.http import JsonResponse
+from django.shortcuts import render
 
 
 s_logger = sync_logger = logging.getLogger('chat')
@@ -81,7 +82,7 @@ def get_ctr(grouping_interval='3H', click_type='click'):
     s_logger.debug("get_ctr step 2")
 
     # Соединение данных из двух файлов по uid
-    merged_y = pd.merge(filtered_y, data_x[['uid', 'reg_time']], on='uid', how='inner').set_index('reg_time')
+    merged_y = pd.merge(filtered_y, data_x.reset_index()[['uid', 'reg_time']], on='uid', how='inner').set_index('reg_time')
     merged_y.index = pd.to_datetime(merged_y.index)
 
     s_logger.debug("get_ctr step 3")
@@ -130,7 +131,7 @@ def get_evpm(grouping_interval='3H', event_type='fclick'):
     elif event_type == 'other':
         filtered_y = data_y[~data_y['tag'].isin(['fclick', 'content', 'vcontent', 'registration', 'vregistration', 'signup', 'vsignup', 'lead', 'vlead'])]
 
-    merged_y = pd.merge(filtered_y, data_x[['uid', 'reg_time']], on='uid', how='inner').set_index('reg_time')
+    merged_y = pd.merge(filtered_y, data_x.reset_index()[['uid', 'reg_time']], on='uid', how='inner').set_index('reg_time')
     merged_y.index = pd.to_datetime(merged_y.index)
 
     grouped_y = merged_y.resample(grouping_interval)['uid'].nunique()
@@ -138,13 +139,15 @@ def get_evpm(grouping_interval='3H', event_type='fclick'):
 
     evpm = (grouped_y / grouped_x * 1000).fillna(0)
 
-    cache.set(cache_key, evpm, 3600)  # cache for 1 hour
-
+    cache.set(cache_key, evpm, 3600)
     return evpm
 
 
 def get_data_x():
     s_logger.debug("someone called get_data_x")
+    cached_data_x = get_cached_dataframe('data_x_cache_key')
+    if cached_data_x is not None:
+        return cached_data_x
     data_x = pd.read_csv(X_FILE)
     data_x = (data_x.sort_values(by='reg_time')
               .drop_duplicates(subset='uid', keep='first'))
@@ -155,18 +158,23 @@ def get_data_x():
     # Извлечение 2 значащих блоков из столбца uid
     data_x['uid'] = data_x['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
     # reg_time в формат datetime и установка его в качестве индекса
-    data_x.set_index('reg_time', inplace=True, drop=False)
+    data_x.set_index('reg_time', inplace=True)
     data_x.index = pd.to_datetime(data_x.index)
     # Создание нового столбца, который учитывает fc_imp_chk
     data_x['impressions'] = data_x['fc_imp_chk'] + 1
+    cache_dataframe('data_x_cache_key', data_x, 48*60*60)
     return data_x
 
 
 def get_data_y():
+    cached_data_y = get_cached_dataframe('data_y_cache_key')
+    if cached_data_y is not None:
+        return cached_data_y
     s_logger.debug("someone called get_data_y")
     data_y = pd.read_csv(Y_FILE)
     # Извлечение 2 значащих блоков из столбца uid
     data_y['uid'] = data_y['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
+    cache_dataframe('data_y_cache_key', data_y, 48*60*60)
     return data_y
 
 
@@ -183,6 +191,22 @@ def aggregate_data(
     else:
         grouped_x = data_x[metric_column]
         grouped_y = merged_y['uid']
-    
+
     result = (grouped_y / grouped_x).fillna(0)
     return result
+
+
+def cache_dataframe(key, df, timeout):
+    s_logger.debug("someone called cache_dataframe")
+    buffer = io.BytesIO()
+    df.to_pickle(buffer)
+    cache.set(key, buffer.getvalue(), timeout)
+
+
+def get_cached_dataframe(key):
+    s_logger.debug("someone called get_cached_dataframe")
+    cached_data = cache.get(key)
+    if cached_data is None:
+        return None
+    buffer = io.BytesIO(cached_data)
+    return pd.read_pickle(buffer)
