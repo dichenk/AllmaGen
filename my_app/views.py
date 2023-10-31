@@ -1,6 +1,5 @@
 import io
 import logging
-import time
 
 import pandas as pd
 from django.core.cache import cache
@@ -8,7 +7,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 
 
-s_logger = sync_logger = logging.getLogger('chat')
+s_logger = logging.getLogger('chat')
 
 
 X_FILE = 'static/interview.data/interview.X.csv'
@@ -16,12 +15,12 @@ Y_FILE = 'static/interview.data/interview.y.csv'
 
 
 def main_page(request):
-    s_logger.debug("someone called main page")
+    s_logger.debug("called main page")
     return render(request, 'index.html')
 
 
 def ctrChart(request):
-    s_logger.debug("someone called ctrChart")
+    s_logger.debug("called ctrChart")
     interval = request.GET.get('interval', 'D')
     click_type = request.GET.get('clickType', 'click')
 
@@ -35,7 +34,7 @@ def ctrChart(request):
 
 
 def evpmChart(request):
-    s_logger.debug("someone called evpmChart")
+    s_logger.debug("called evpmChart")
     interval = request.GET.get('interval', 'D')
     event_type = request.GET.get('eventType', 'fclick')
 
@@ -49,7 +48,7 @@ def evpmChart(request):
 
 
 def get_ctr(grouping_interval='3H', click_type='click'):
-    s_logger.debug("someone called get_ctr")
+    s_logger.debug("called get_ctr")
     cache_key = f'ctr_{grouping_interval}_{click_type}'
     cached_result = cache.get(cache_key)
     if cached_result is not None:
@@ -85,17 +84,9 @@ def get_ctr(grouping_interval='3H', click_type='click'):
     merged_y = pd.merge(filtered_y, data_x.reset_index()[['uid', 'reg_time']], on='uid', how='inner').set_index('reg_time')
     merged_y.index = pd.to_datetime(merged_y.index)
 
-    s_logger.debug("get_ctr step 3")
-
-    s_logger.debug("About to resample data_x with interval: %s", grouping_interval)
-    start_time = time.time()
     grouped_x = data_x.resample(grouping_interval).sum()
-    end_time = time.time()
-    s_logger.debug("Resampling completed. Length of grouped_x: %d", len(grouped_x))
-    s_logger.debug("Resampling took %f seconds", end_time - start_time)
-    s_logger.debug("get_ctr step 3.1")
     grouped_y = merged_y.resample(grouping_interval).nunique()
-    s_logger.debug("get_ctr step 3.2")
+
     ctr = aggregate_data(
         grouped_x,
         grouped_y,
@@ -103,14 +94,12 @@ def get_ctr(grouping_interval='3H', click_type='click'):
         'impressions',
         already_grouped=True)*100
 
-    s_logger.debug("get_ctr step 4")
-
     cache.set(cache_key, ctr, 3600)
     return ctr
 
 
 def get_evpm(grouping_interval='3H', event_type='fclick'):
-    s_logger.debug("someone called get_evpm")
+    s_logger.debug("called get_evpm")
     cache_key = f'evpm_{grouping_interval}_{event_type}'
     cached_result = cache.get(cache_key)
     if cached_result is not None:
@@ -134,17 +123,22 @@ def get_evpm(grouping_interval='3H', event_type='fclick'):
     merged_y = pd.merge(filtered_y, data_x.reset_index()[['uid', 'reg_time']], on='uid', how='inner').set_index('reg_time')
     merged_y.index = pd.to_datetime(merged_y.index)
 
-    grouped_y = merged_y.resample(grouping_interval)['uid'].nunique()
-    grouped_x = data_x.resample(grouping_interval)['impressions'].sum()
+    grouped_x = data_x.resample(grouping_interval).sum()
+    grouped_y = merged_y.resample(grouping_interval).nunique()
 
-    evpm = (grouped_y / grouped_x * 1000).fillna(0)
+    evpm = aggregate_data(
+        grouped_x,
+        grouped_y,
+        grouped_x.index,
+        'impressions',
+        already_grouped=True)*1000
 
     cache.set(cache_key, evpm, 3600)
     return evpm
 
 
 def get_data_x():
-    s_logger.debug("someone called get_data_x")
+    s_logger.debug("called get_data_x")
     cached_data_x = get_cached_dataframe('data_x_cache_key')
     if cached_data_x is not None:
         return cached_data_x
@@ -167,10 +161,12 @@ def get_data_x():
 
 
 def get_data_y():
+    s_logger.debug("called get_data_y")
+
     cached_data_y = get_cached_dataframe('data_y_cache_key')
     if cached_data_y is not None:
         return cached_data_y
-    s_logger.debug("someone called get_data_y")
+    
     data_y = pd.read_csv(Y_FILE)
     # Извлечение 2 значащих блоков из столбца uid
     data_y['uid'] = data_y['uid'].apply(lambda x: '-'.join(x.split('-')[3:]))
@@ -184,7 +180,7 @@ def aggregate_data(
         group_column,
         metric_column,
         already_grouped=False):
-    s_logger.debug("someone called aggregate_data")
+    s_logger.debug("called aggregate_data")
     if not already_grouped:
         grouped_x = data_x.groupby(group_column)[metric_column].sum()
         grouped_y = merged_y.groupby(group_column)['uid'].nunique()
@@ -197,14 +193,14 @@ def aggregate_data(
 
 
 def cache_dataframe(key, df, timeout):
-    s_logger.debug("someone called cache_dataframe")
+    s_logger.debug("called cache_dataframe")
     buffer = io.BytesIO()
     df.to_pickle(buffer)
     cache.set(key, buffer.getvalue(), timeout)
 
 
 def get_cached_dataframe(key):
-    s_logger.debug("someone called get_cached_dataframe")
+    s_logger.debug("called get_cached_dataframe")
     cached_data = cache.get(key)
     if cached_data is None:
         return None
